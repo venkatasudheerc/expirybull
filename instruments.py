@@ -7,12 +7,6 @@ import scipy
 
 
 def calc_greeks(underlying_price, strike, ir, time_to_expiry, instrument_type, option_price):
-    implied_volatility = float(0.0)
-    delta = float(0.0)
-    theta = float(0.0)
-    rho = float(0.0)
-    gamma = float(0.0)
-    vega = float(0.0)
 
     if instrument_type == "CE":
         mbo = mibian.BS([underlying_price, strike, ir, time_to_expiry], callPrice=option_price)

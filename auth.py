@@ -5,7 +5,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 # from selenium.webdriver.common.by import By
 import time
 import pyotp
-import json
 
 from credentials_zerodha import USERNAME, PASSWORD, API_KEY, API_SECRET, TOTP_TOKEN
 from api_urls import BASE_URL, TWOFA_URL, LOGIN_URL

@@ -1,13 +1,7 @@
 # This is a sample Python script.
-import datetime
-import logging
 import time
-
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
-import pandas as pd
-import optionchain_stream
-
 import auth
 import instruments
 from credentials_zerodha import USERNAME, PASSWORD, API_KEY, API_SECRET, TOTP_TOKEN, ACCESS_TOKEN
