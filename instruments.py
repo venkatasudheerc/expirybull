@@ -40,6 +40,8 @@ class Instruments:
         self.underlying_map = [
             {'name': 'NIFTY', 'trading_symbol': 'NSE:NIFTY 50', 'exchange': 'NFO', 'segment': 'NFO-OPT'},
             {'name': 'BANKNIFTY', 'trading_symbol': 'NSE:NIFTY BANK', 'exchange': 'NFO', 'segment': 'NFO-OPT'},
+            {'name': 'MIDCPNIFTY', 'trading_symbol': 'NSE:MIDCPNIFTY', 'exchange': 'NFO', 'segment': 'NFO-OPT'},
+            {'name': 'FINNIFTY', 'trading_symbol': 'NSE:FINNIFTY', 'exchange': 'NFO', 'segment': 'NFO-OPT'},
             {'name': 'SENSEX', 'trading_symbol': 'BSE:SENSEX', 'exchange': 'BFO', 'segment': 'BFO-OPT'}]
         for ticker in self.underlying_map:
             if ticker['name'] == underlying:
@@ -77,12 +79,11 @@ class Instruments:
 
     def feed_data(self, ticks, kite: KiteConnect, option_chain_data=None):
         print("inside feed_data()")
-        tick_dict = None
         option_data = []
         for tick in ticks:
             if tick['mode'] != "full":
                 continue
-            print(tick)
+            # print(tick)
             [symbol, instrument_type, strike] = [[x['tradingsymbol'], x['instrument_type'], x['strike']]
                                                  for x in self.target_symbols
                                                  if x['instrument_token'] == tick['instrument_token']][0]
@@ -95,7 +96,7 @@ class Instruments:
             t = datetime.now(timezone('Asia/Kolkata')).time().strftime("%H%M")
             # calculating time to expiry in days
             tt_expiry = (int(1530) - int(t))/615
-            print("time to expiry : ", tt_expiry)
+            # print("time to expiry : ", tt_expiry)
 
             [implied_volatility, delta, theta, rho, gamma, vega] = calc_greeks(underlying_price=underlying_ltp,
                                                                                strike=strike,
@@ -103,7 +104,6 @@ class Instruments:
                                                                                time_to_expiry=tt_expiry,
                                                                                instrument_type=instrument_type,
                                                                                option_price=tick['last_price'])
-            print(symbol, instrument_type)
             tick_dict = {
                 'instrument_token': tick['instrument_token'],
                 'tradingsymbol': symbol,
@@ -128,4 +128,5 @@ class Instruments:
         else:
             self.option_chain_data = pd.concat([self.option_chain_data, pd.DataFrame(option_data)])
         self.option_chain_data.to_csv("option_chain.csv", index=False)
-        return option_chain_data
+        # print(self.option_chain_data.count())
+        return self.option_chain_data
