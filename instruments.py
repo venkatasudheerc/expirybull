@@ -36,6 +36,7 @@ class Instruments:
         self.exchange = "NSE"
         self.segment = "NFO-OPT"
         self.underlying = underlying
+        self.underlying_ltp = float(0)
         self.trading_symbol = ""
         self.underlying_map = [
             {'name': 'NIFTY', 'trading_symbol': 'NSE:NIFTY 50', 'exchange': 'NFO', 'segment': 'NFO-OPT'},
@@ -57,8 +58,19 @@ class Instruments:
         self.instruments_list = kite.instruments(self.exchange)
         return self.instruments_list
 
+    def get_underlying_ltp(self, kite: KiteConnect):
+        if self.underlying == "MIDCPNIFTY":
+            self.underlying_ltp = kite.quote("NSE:NIFTY MID SELECT")['NSE:NIFTY MID SELECT']['last_price']
+        elif self.underlying == "FINNIFTY":
+            self.underlying_ltp = kite.quote("NSE:NIFTY FIN SERVICE")['NSE:NIFTY FIN SERVICE']['last_price']
+        else:
+            self.underlying_ltp = kite.quote(self.trading_symbol)[self.trading_symbol]['last_price']
+
+        return self.underlying_ltp
+
     def option_contracts(self, kite: KiteConnect, instrument_type="", expiry=True):
-        underlying_ltp = kite.quote(self.trading_symbol)[self.trading_symbol]['last_price']
+
+        underlying_ltp = self.get_underlying_ltp(kite)
 
         self.instruments_list = self.instruments(kite)
         for instrument in self.instruments_list:
@@ -78,7 +90,12 @@ class Instruments:
         return self.target_symbols_df
 
     def feed_data(self, ticks, kite: KiteConnect, option_chain_data=None):
-        print("inside feed_data()")
+        t = datetime.now(timezone('Asia/Kolkata')).time().strftime("%H%M")
+        # calculating time to expiry in days
+        tt_expiry = (int(1530) - int(t)) / 615
+        # print("time to expiry : ", tt_expiry)
+
+        print("inside feed_data(): ", t)
         option_data = []
         for tick in ticks:
             if tick['mode'] != "full":
@@ -91,12 +108,7 @@ class Instruments:
             # calculate greeks
             # https://github.com/yassinemaaroufi/MibianLib
 
-            underlying_ltp = kite.quote(self.trading_symbol)[self.trading_symbol]['last_price']
-
-            t = datetime.now(timezone('Asia/Kolkata')).time().strftime("%H%M")
-            # calculating time to expiry in days
-            tt_expiry = (int(1530) - int(t))/615
-            # print("time to expiry : ", tt_expiry)
+            underlying_ltp = self.get_underlying_ltp(kite)
 
             [implied_volatility, delta, theta, rho, gamma, vega] = calc_greeks(underlying_price=underlying_ltp,
                                                                                strike=strike,
@@ -123,10 +135,10 @@ class Instruments:
             }
             option_data.append(tick_dict)
 
-        if len(self.option_chain_data) == 0:
-            self.option_chain_data = pd.DataFrame(option_data)
-        else:
-            self.option_chain_data = pd.concat([self.option_chain_data, pd.DataFrame(option_data)])
+            if len(self.option_chain_data) == 0:
+                self.option_chain_data = pd.DataFrame(option_data)
+            else:
+                self.option_chain_data = pd.concat([self.option_chain_data, pd.DataFrame(option_data)])
         self.option_chain_data.to_csv("option_chain.csv", index=False)
         # print(self.option_chain_data.count())
         return self.option_chain_data
