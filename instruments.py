@@ -3,7 +3,7 @@ from pytz import timezone
 from kiteconnect import KiteConnect
 import pandas as pd
 import mibian
-import scipy
+import logging
 
 
 def calc_greeks(underlying_price, strike, ir, time_to_expiry, instrument_type, option_price):
@@ -97,14 +97,18 @@ class Instruments:
 
         print("inside feed_data(): ", t)
         option_data = []
+        print(len(ticks))
+        i = 0
         for tick in ticks:
             if tick['mode'] != "full":
                 continue
             # print(tick)
+            i = i+1
+            # logging.info(i)
+            # logging.info(tick)
             [symbol, instrument_type, strike] = [[x['tradingsymbol'], x['instrument_type'], x['strike']]
                                                  for x in self.target_symbols
                                                  if x['instrument_token'] == tick['instrument_token']][0]
-
             # calculate greeks
             # https://github.com/yassinemaaroufi/MibianLib
 
@@ -116,12 +120,14 @@ class Instruments:
                                                                                time_to_expiry=tt_expiry,
                                                                                instrument_type=instrument_type,
                                                                                option_price=tick['last_price'])
+            # print(datetime.now(timezone('Asia/Kolkata')).strftime("%Y%m%d_%H%M%S"))
+
             tick_dict = {
                 'instrument_token': tick['instrument_token'],
                 'tradingsymbol': symbol,
                 'instrument_type': instrument_type,
                 'strike': strike,
-                'datetime': datetime.now(timezone('Asia/Kolkata')).strftime("%Y%m%d_%H%M%S"),
+                'datetime': datetime.now(timezone('Asia/Kolkata')).strftime("%Y%m%d_%H%M"),
                 'ltp': tick['last_price'],
                 'avg_traded_price': tick['average_traded_price'],
                 'volume': tick['volume_traded'],
@@ -139,6 +145,10 @@ class Instruments:
                 self.option_chain_data = pd.DataFrame(option_data)
             else:
                 self.option_chain_data = pd.concat([self.option_chain_data, pd.DataFrame(option_data)])
+        print(datetime.now(timezone('Asia/Kolkata')).isoformat(), " : before : ", len(self.option_chain_data))
+        # self.option_chain_data.sort_values("datetime", ascending=True)
+        self.option_chain_data.drop_duplicates(subset=['instrument_token', 'datetime'], keep='last', inplace=True)
+        print(datetime.now(timezone('Asia/Kolkata')).isoformat(), " : After : ", len(self.option_chain_data))
         self.option_chain_data.to_csv("option_chain.csv", index=False)
         # print(self.option_chain_data.count())
         return self.option_chain_data
